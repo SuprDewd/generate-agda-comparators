@@ -34,7 +34,7 @@ withDeps deps tp@(Custom name cons)
   | name `Map.member` deps = deps
   | otherwise              = foldl' withDeps (Map.insert name tp deps) (concatMap snd cons)
 
-camelCase : TypeName -> String
+camelCase :: TypeName -> String
 camelCase s = toLower (head s) : filter (not . (`elem` "() ")) (tail s)
 
 eqName :: AgdaType -> String

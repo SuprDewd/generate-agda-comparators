@@ -138,7 +138,7 @@ mutual
   clauseLt : Clause → Clause → Bool
   clauseLt (clause l1 l2) (clause r1 r2) = isLt (listArgPatternEq l1 r1 ∷ termEq l2 r2 ∷ []) (listArgPatternLt l1 r1 ∷ termLt l2 r2 ∷ [])
   clauseLt (absurd-clause l1) (absurd-clause r1) = isLt (listArgPatternEq l1 r1 ∷ []) (listArgPatternLt l1 r1 ∷ [])
-  clauseLt (absurd-clause _) (clause _ _) = true
+  clauseLt (clause _ _) (absurd-clause _) = true
   clauseLt _ _ = false
 
   listArgPatternLt : List (Arg Pattern) → List (Arg Pattern) → Bool
@@ -166,27 +166,27 @@ mutual
   literalLt (string l1) (string r1) = isLt (primStringEquality l1 r1 ∷ []) (primStringLess l1 r1 ∷ [])
   literalLt (name l1) (name r1) = isLt (primQNameEquality l1 r1 ∷ []) (primQNameLess l1 r1 ∷ [])
   literalLt (meta l1) (meta r1) = isLt (primMetaEquality l1 r1 ∷ []) (primMetaLess l1 r1 ∷ [])
+  literalLt (nat _) (float _) = true
+  literalLt (nat _) (char _) = true
   literalLt (nat _) (string _) = true
-  literalLt (float _) (nat _) = true
+  literalLt (nat _) (name _) = true
+  literalLt (nat _) (meta _) = true
+  literalLt (float _) (char _) = true
   literalLt (float _) (string _) = true
   literalLt (float _) (name _) = true
   literalLt (float _) (meta _) = true
-  literalLt (char _) (nat _) = true
-  literalLt (char _) (float _) = true
   literalLt (char _) (string _) = true
   literalLt (char _) (name _) = true
   literalLt (char _) (meta _) = true
-  literalLt (name _) (nat _) = true
-  literalLt (name _) (string _) = true
-  literalLt (meta _) (nat _) = true
-  literalLt (meta _) (string _) = true
-  literalLt (meta _) (name _) = true
+  literalLt (string _) (name _) = true
+  literalLt (string _) (meta _) = true
+  literalLt (name _) (meta _) = true
   literalLt _ _ = false
 
   natLt : Nat → Nat → Bool
   natLt zero zero = false
   natLt (suc l1) (suc r1) = isLt (natEq l1 r1 ∷ []) (natLt l1 r1 ∷ [])
-  natLt (suc _) zero = true
+  natLt zero (suc _) = true
   natLt _ _ = false
 
   patternLt : Pattern → Pattern → Bool
@@ -200,31 +200,31 @@ mutual
   patternLt (con _ _) (var _) = true
   patternLt (con _ _) (lit _) = true
   patternLt (con _ _) (proj _) = true
+  patternLt (con _ _) absurd = true
   patternLt dot (var _) = true
   patternLt dot (lit _) = true
   patternLt dot (proj _) = true
-  patternLt (lit _) (var _) = true
+  patternLt dot absurd = true
+  patternLt (var _) (lit _) = true
+  patternLt (var _) (proj _) = true
+  patternLt (var _) absurd = true
   patternLt (lit _) (proj _) = true
-  patternLt (proj _) (var _) = true
-  patternLt absurd (con _ _) = true
-  patternLt absurd dot = true
-  patternLt absurd (var _) = true
-  patternLt absurd (lit _) = true
-  patternLt absurd (proj _) = true
+  patternLt (lit _) absurd = true
+  patternLt (proj _) absurd = true
   patternLt _ _ = false
 
   relevanceLt : Relevance → Relevance → Bool
   relevanceLt relevant relevant = false
   relevanceLt irrelevant irrelevant = false
-  relevanceLt irrelevant relevant = true
+  relevanceLt relevant irrelevant = true
   relevanceLt _ _ = false
 
   sortLt : Sort → Sort → Bool
   sortLt unknown unknown = false
   sortLt (set l1) (set r1) = isLt (termEq l1 r1 ∷ []) (termLt l1 r1 ∷ [])
   sortLt (lit l1) (lit r1) = isLt (natEq l1 r1 ∷ []) (natLt l1 r1 ∷ [])
+  sortLt (set _) (lit _) = true
   sortLt (set _) unknown = true
-  sortLt (lit _) (set _) = true
   sortLt (lit _) unknown = true
   sortLt _ _ = false
 
@@ -239,58 +239,59 @@ mutual
   termLt (agda-sort l1) (agda-sort r1) = isLt (sortEq l1 r1 ∷ []) (sortLt l1 r1 ∷ [])
   termLt (lit l1) (lit r1) = isLt (literalEq l1 r1 ∷ []) (literalLt l1 r1 ∷ [])
   termLt (meta l1 l2) (meta r1 r2) = isLt (primMetaEquality l1 r1 ∷ listArgTermEq l2 r2 ∷ []) (primMetaLess l1 r1 ∷ listArgTermLt l2 r2 ∷ [])
-  termLt (con _ _) (var _ _) = true
+  termLt (var _ _) (con _ _) = true
+  termLt (var _ _) (def _ _) = true
+  termLt (var _ _) (lam _ _) = true
+  termLt (var _ _) (pat-lam _ _) = true
+  termLt (var _ _) (pi _ _) = true
+  termLt (var _ _) (agda-sort _) = true
+  termLt (var _ _) (lit _) = true
+  termLt (var _ _) (meta _ _) = true
+  termLt (var _ _) unknown = true
   termLt (con _ _) (def _ _) = true
   termLt (con _ _) (lam _ _) = true
   termLt (con _ _) (pat-lam _ _) = true
   termLt (con _ _) (pi _ _) = true
+  termLt (con _ _) (agda-sort _) = true
   termLt (con _ _) (lit _) = true
   termLt (con _ _) (meta _ _) = true
   termLt (con _ _) unknown = true
-  termLt (def _ _) (var _ _) = true
   termLt (def _ _) (lam _ _) = true
   termLt (def _ _) (pat-lam _ _) = true
   termLt (def _ _) (pi _ _) = true
+  termLt (def _ _) (agda-sort _) = true
   termLt (def _ _) (lit _) = true
   termLt (def _ _) (meta _ _) = true
   termLt (def _ _) unknown = true
-  termLt (lam _ _) (var _ _) = true
   termLt (lam _ _) (pat-lam _ _) = true
   termLt (lam _ _) (pi _ _) = true
+  termLt (lam _ _) (agda-sort _) = true
   termLt (lam _ _) (lit _) = true
   termLt (lam _ _) (meta _ _) = true
   termLt (lam _ _) unknown = true
-  termLt (pat-lam _ _) (var _ _) = true
   termLt (pat-lam _ _) (pi _ _) = true
+  termLt (pat-lam _ _) (agda-sort _) = true
+  termLt (pat-lam _ _) (lit _) = true
+  termLt (pat-lam _ _) (meta _ _) = true
   termLt (pat-lam _ _) unknown = true
-  termLt (pi _ _) (var _ _) = true
+  termLt (pi _ _) (agda-sort _) = true
+  termLt (pi _ _) (lit _) = true
+  termLt (pi _ _) (meta _ _) = true
   termLt (pi _ _) unknown = true
-  termLt (agda-sort _) (var _ _) = true
-  termLt (agda-sort _) (con _ _) = true
-  termLt (agda-sort _) (def _ _) = true
-  termLt (agda-sort _) (lam _ _) = true
-  termLt (agda-sort _) (pat-lam _ _) = true
-  termLt (agda-sort _) (pi _ _) = true
   termLt (agda-sort _) (lit _) = true
   termLt (agda-sort _) (meta _ _) = true
   termLt (agda-sort _) unknown = true
-  termLt (lit _) (var _ _) = true
-  termLt (lit _) (pat-lam _ _) = true
-  termLt (lit _) (pi _ _) = true
   termLt (lit _) (meta _ _) = true
   termLt (lit _) unknown = true
-  termLt (meta _ _) (var _ _) = true
-  termLt (meta _ _) (pat-lam _ _) = true
-  termLt (meta _ _) (pi _ _) = true
   termLt (meta _ _) unknown = true
-  termLt unknown (var _ _) = true
   termLt _ _ = false
 
   visibilityLt : Visibility → Visibility → Bool
   visibilityLt visible visible = false
   visibilityLt hidden hidden = false
   visibilityLt instance′ instance′ = false
-  visibilityLt hidden visible = true
+  visibilityLt visible hidden = true
+  visibilityLt visible instance′ = true
   visibilityLt hidden instance′ = true
-  visibilityLt instance′ visible = true
   visibilityLt _ _ = false
+
